@@ -8,6 +8,7 @@ import os.path as osp
 from functools import partial
 
 import gym
+import rlbench.gym
 import tensorflow as tf
 from baselines import logger
 from baselines.bench import Monitor
