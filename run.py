@@ -100,6 +100,7 @@ class Trainer(object):
         self.agent.to_report['feat_var'] = tf.reduce_mean(tf.nn.moments(self.feature_extractor.features, [0, 1])[1])
 
     def _set_env_vars(self):
+        #First create 'beta' environment with make_env_all_params() method
         env = self.make_env(0, add_monitor=False)
         self.ob_space, self.ac_space = env.observation_space, env.action_space
         self.ob_mean, self.ob_std = random_agent_ob_mean_std(env)
@@ -118,9 +119,27 @@ class Trainer(object):
 
         self.agent.stop_interaction()
 
+#TODO: Amend function to accommodate for robogym env, and also try to see how how function like 'make_robo_XXX' works
 
-def make_env_all_params(rank, add_monitor, args):
+def make_env_all_params(rank, add_monitor, args): #rank is 0, 
+    '''
+    This is the 'complete' make_env method with all the params
+    
+    It makes the appropriate env according to the argument 'env_kind'
+    '''
     if args["env_kind"] == 'atari':
+        '''
+        First makes a gym env of atari kind
+        
+        Then proceeds to take a random number of no-op steps to achieve initial state (shuffling), 
+        and the number is limited to noop_max
+        
+        Then proceeds to 'tell' the env to only return after n frames, which is determined by 'skip'
+        
+        Then creates a frame stack of similar size to 'skip' argument
+        
+        Then sets a limit on the number of steps that can be taken by the environment
+        '''
         env = gym.make(args['env'])
         assert 'NoFrameskip' in env.spec.id
         env = NoopResetEnv(env, noop_max=args['noop_max'])
@@ -140,6 +159,8 @@ def make_env_all_params(rank, add_monitor, args):
             env = make_robo_pong()
         elif args["env"] == "hockey":
             env = make_robo_hockey()
+    elif args["env_kind"] == "robo_env":
+        env = gym.make(args['env'])
 
     if add_monitor:
         env = Monitor(env, osp.join(logger.get_dir(), '%.2i' % rank))
