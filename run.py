@@ -105,6 +105,9 @@ class Trainer(object):
         self.ob_space, self.ac_space = env.observation_space, env.action_space
         self.ob_mean, self.ob_std = random_agent_ob_mean_std(env)
         del env
+        if args["env_kind"] == "robo_env":
+            else:
+            
         self.envs = [functools.partial(self.make_env, i) for i in range(self.envs_per_process)]
 
     def train(self):
