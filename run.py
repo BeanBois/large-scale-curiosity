@@ -101,13 +101,10 @@ class Trainer(object):
 
     def _set_env_vars(self):
         #First create 'beta' environment with make_env_all_params() method
-        env = self.make_env(0, add_monitor=False)
+        env = self.make_env(0, add_monitor=False) #TODO: Error is here
         self.ob_space, self.ac_space = env.observation_space, env.action_space
         self.ob_mean, self.ob_std = random_agent_ob_mean_std(env)
         del env
-        if args["env_kind"] == "robo_env":
-            else:
-            
         self.envs = [functools.partial(self.make_env, i) for i in range(self.envs_per_process)]
 
     def train(self):
@@ -162,9 +159,11 @@ def make_env_all_params(rank, add_monitor, args): #rank is 0,
             env = make_robo_pong()
         elif args["env"] == "hockey":
             env = make_robo_hockey()
-    elif args["env_kind"] == "robo_env":
+    elif args["env_kind"] == 'robo_env':
+        env = gym.make(args['env']) #TODO: Error is here!
+    else:
         env = gym.make(args['env'])
-
+        
     if add_monitor:
         env = Monitor(env, osp.join(logger.get_dir(), '%.2i' % rank))
     return env

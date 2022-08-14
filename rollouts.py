@@ -5,7 +5,7 @@ from mpi4py import MPI
 
 from recorder import Recorder
 
-
+#TODO: potential problem in how environment steps is taken. It does not render
 class Rollout(object):
     def __init__(self, ob_space, ac_space, nenvs, nsteps_per_seg, nsegs_per_env, nlumps, envs, policy,
                  int_rew_coeff, ext_rew_coeff, record_rollouts, dynamics):

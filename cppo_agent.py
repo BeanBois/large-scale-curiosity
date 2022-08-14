@@ -70,6 +70,7 @@ class PpoOptimizer(object):
             self.to_report = {'tot': self.total_loss, 'pg': pg_loss, 'vf': vf_loss, 'ent': entropy,
                               'approxkl': approxkl, 'clipfrac': clipfrac}
 
+    #TODO: potential issue in self.envs creaeting multiple environments?
     #params : env_fns are a list of function that creates env
     def start_interaction(self, env_fns, dynamics, nlump=2):
         self.loss_names, self._losses = zip(*list(self.to_report.items()))
