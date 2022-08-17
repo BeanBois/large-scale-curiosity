@@ -1,19 +1,40 @@
-#!/usr/bin/env python
-#TODO: solve import motherfucking erros cause they aint got hoes
-try:
-    from OpenGL import GLU
-except:
-    print("no OpenGL.GLU")
-from enum import Enum
+# import os
+
+# def guess_available_gpus(n_gpus=None):
+#     if n_gpus is not None:
+#         print('a')
+#         return list(range(n_gpus))
+#     if 'CUDA_VISIBLE_DEVICES' in os.environ:
+#         cuda_visible_divices = os.environ['CUDA_VISIBLE_DEVICES']
+#         cuda_visible_divices = cuda_visible_divices.split(',')
+#         print('b')
+#         return [int(n) for n in cuda_visible_divices]
+#     nvidia_dir = '/proc/driver/nvidia/gpus/'
+#     if os.path.exists(nvidia_dir):
+#         n_gpus = len(os.listdir(nvidia_dir))
+#         print('c')
+#         return list(range(n_gpus))
+#     raise Exception("Couldn't guess the available gpus on this machine")
+
+
+# print(guess_available_gpus())
+
+# try:
+#     from OpenGL import GLU
+# except:
+#     print("no OpenGL.GLU")
 import functools
 import os.path as osp
 from functools import partial
 
 import gym
+import rlbench.gym
 import tensorflow as tf
 from baselines import logger
 from baselines.bench import Monitor
+# from baselines.common.atari_wrappers import NoopResetEnv, FrameStack
 from mpi4py import MPI
+# print(guess_available_gpus())
 
 from auxiliary_tasks import FeatureExtractor, InverseDynamics, VAE, JustPixels
 from cnn_policy import CnnPolicy
@@ -28,14 +49,17 @@ class CameraView(enum.Enum):
     Wrist = "wrist_rgb"
     Front = "front_rgb"
     
-
 def start_experiment(**args):
+    print('set make env')
     make_env = partial(make_env_all_params, add_monitor=True, args=args)
-
+    print('set trainer')
+    
     trainer = Trainer(make_env=make_env,
                       num_timesteps=args['num_timesteps'], hps=args,
                       envs_per_process=args['envs_per_process'])
+    print('set log')
     log, tf_sess = get_experiment_environment(**args)
+    print('got experiment env')
     with log, tf_sess:
         logdir = logger.get_dir()
         print("results will be saved to ", logdir)
@@ -48,7 +72,11 @@ class Trainer(object):
         self.hps = hps #hyper-parameters
         self.envs_per_process = envs_per_process
         self.num_timesteps = num_timesteps
+        print('start setting env_vars')
         self._set_env_vars()
+        print('finish setting env_vars')
+
+        #cleared till here
 
         self.policy = CnnPolicy(
             scope='pol',
@@ -104,25 +132,31 @@ class Trainer(object):
         self.agent.total_loss += self.agent.to_report['dyn_loss']
         self.agent.to_report['feat_var'] = tf.reduce_mean(tf.nn.moments(self.feature_extractor.features, [0, 1])[1])
 
-    #TODO: potential issue in self.envs creaeting multiple environments?
-    #problem is here.
+    #TODO: ob_space and ac_space needs processing. This processing is done in rlbench/gym/rlbench_env.py
     def _set_env_vars(self, camera_view=CameraView.Wrist):
-        #Camera view takes 4 
-        
+        print('make beta env')
         #First create 'beta' environment with make_env_all_params() method
         env = self.make_env(0, add_monitor=False) #at this point no gpus avail thus cant run
+        print('set ob_space and ac_space')
         self.ob_space, self.ac_space = env.observation_space[camera_view], env.action_space
+        print(self.ob_space)
+        print(self.ac_space)
+        
+        print('set ob_mean and ob_std')
         self.ob_mean, self.ob_std = random_agent_ob_mean_std(env)
         del env
+        print('del beta env')
         # if args["env_kind"] == "robo_env":
         #     #for robo env lets create 1 env first
         #     self.envs = [functools.partial(self.make_env, i) for i in range(1)] 
-        # else:
+        # else: 
         self.envs = [functools.partial(self.make_env, i) for i in range(self.envs_per_process)]
 
     def train(self):
+        print('start training')
         self.agent.start_interaction(self.envs, nlump=self.hps['nlumps'], dynamics=self.dynamics)
         while True:
+            print('step')
             info = self.agent.step()
             if info['update']:
                 logger.logkvs(info['update'])
@@ -133,7 +167,7 @@ class Trainer(object):
         self.agent.stop_interaction()
 
 #TODO: Amend function to accommodate for robogym env, and also try to see how how function like 'make_robo_XXX' works
-
+#RESOLVED
 def make_env_all_params(rank, add_monitor, args): #rank is 0, 
     env = gym.make(args['env'])
 
@@ -200,9 +234,10 @@ if __name__ == '__main__':
     parser.add_argument('--ext_coeff', type=float, default=0.)
     parser.add_argument('--int_coeff', type=float, default=1.)
     parser.add_argument('--layernorm', type=int, default=0)
-    parser.add_argument('--feat_learning', type=str, default="none",
+    parser.add_argument('--feat_learning', type=str, default="none", 
                         choices=["none", "idf", "vaesph", "vaenonsph", "pix2pix"])
 
     args = parser.parse_args()
-
-    start_experiment(**args.__dict__)
+    print('starting experiment')
+    start_experiment(**args.__dict__) 
+ 
