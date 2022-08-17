@@ -130,9 +130,29 @@ def add_pos_bias(x):
         return x + b
 
 
+#TODO: problem is now here
+# basically input x only has 2 dimensions -- '[a,b]' but tf expects x:=(BATCH_SIZE, WIDTH, HEIGHT, CHANNELS)
+'''
+Batch Size dimension
+
+In tensorflow(possibly in other machine learning libraries) once you have defined your model, you have two options to feed data to your model. The first options is feeding the data points one at a time. 
+The second options is feed N number of data points at time to your model. This is possible because of the Batch size dimension
+
+Width dimension
+
+This dimension specifies the width of the image.
+
+Height dimension
+
+This dimension specifies Height of the image
+
+Channels dimension
+
+The channel dimension in RGB image is the RGB values dimension.
+'''
 def small_convnet(x, nl, feat_dim, last_nl, layernormalize, batchnorm=False):
     bn = tf.layers.batch_normalization if batchnorm else lambda x: x
-    x = bn(tf.layers.conv2d(x, filters=32, kernel_size=8, strides=(4, 4), activation=nl))
+    x = bn(tf.layers.conv2d(x, filters=32, kernel_size=8, strides=(4, 4), activation=nl))  #first layer, expected ndim=4 got ndim=2
     x = bn(tf.layers.conv2d(x, filters=64, kernel_size=4, strides=(2, 2), activation=nl))
     x = bn(tf.layers.conv2d(x, filters=64, kernel_size=3, strides=(1, 1), activation=nl))
     x = tf.reshape(x, (-1, np.prod(x.get_shape().as_list()[1:])))

@@ -1,8 +1,10 @@
 #!/usr/bin/env python
+#TODO: solve import motherfucking erros cause they aint got hoes
 try:
     from OpenGL import GLU
 except:
     print("no OpenGL.GLU")
+from enum import Enum
 import functools
 import os.path as osp
 from functools import partial
@@ -11,7 +13,6 @@ import gym
 import tensorflow as tf
 from baselines import logger
 from baselines.bench import Monitor
-from baselines.common.atari_wrappers import NoopResetEnv, FrameStack
 from mpi4py import MPI
 
 from auxiliary_tasks import FeatureExtractor, InverseDynamics, VAE, JustPixels
@@ -19,7 +20,14 @@ from cnn_policy import CnnPolicy
 from cppo_agent import PpoOptimizer
 from dynamics import Dynamics, UNet
 from utils import random_agent_ob_mean_std
+import enum
 
+class CameraView(enum.Enum):
+    Left_shoulder = "left_shoulder_rgb"
+    Right_shoulder = "right_shoulder_rgb"
+    Wrist = "wrist_rgb"
+    Front = "front_rgb"
+    
 
 def start_experiment(**args):
     make_env = partial(make_env_all_params, add_monitor=True, args=args)
@@ -98,10 +106,12 @@ class Trainer(object):
 
     #TODO: potential issue in self.envs creaeting multiple environments?
     #problem is here.
-    def _set_env_vars(self):
+    def _set_env_vars(self, camera_view=CameraView.Wrist):
+        #Camera view takes 4 
+        
         #First create 'beta' environment with make_env_all_params() method
         env = self.make_env(0, add_monitor=False) #at this point no gpus avail thus cant run
-        self.ob_space, self.ac_space = env.observation_space, env.action_space
+        self.ob_space, self.ac_space = env.observation_space[camera_view], env.action_space
         self.ob_mean, self.ob_std = random_agent_ob_mean_std(env)
         del env
         # if args["env_kind"] == "robo_env":
@@ -125,8 +135,7 @@ class Trainer(object):
 #TODO: Amend function to accommodate for robogym env, and also try to see how how function like 'make_robo_XXX' works
 
 def make_env_all_params(rank, add_monitor, args): #rank is 0, 
-   import rlbench.gym
-   env = gym.make(args['env'])
+    env = gym.make(args['env'])
 
     if add_monitor:
         env = Monitor(env, osp.join(logger.get_dir(), '%.2i' % rank))

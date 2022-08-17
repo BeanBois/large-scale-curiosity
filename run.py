@@ -8,7 +8,6 @@ import os.path as osp
 from functools import partial
 
 import gym
-import rlbench.gym
 import tensorflow as tf
 from baselines import logger
 from baselines.bench import Monitor
@@ -40,7 +39,7 @@ def start_experiment(**args):
 class Trainer(object):
     def __init__(self, make_env, hps, num_timesteps, envs_per_process):
         self.make_env = make_env
-        self.hps = hps
+        self.hps = hps #hyper-parameters
         self.envs_per_process = envs_per_process
         self.num_timesteps = num_timesteps
         self._set_env_vars()
@@ -99,12 +98,18 @@ class Trainer(object):
         self.agent.total_loss += self.agent.to_report['dyn_loss']
         self.agent.to_report['feat_var'] = tf.reduce_mean(tf.nn.moments(self.feature_extractor.features, [0, 1])[1])
 
+    #TODO: potential issue in self.envs creaeting multiple environments?
+    #problem is here.
     def _set_env_vars(self):
         #First create 'beta' environment with make_env_all_params() method
-        env = self.make_env(0, add_monitor=False) #TODO: Error is here
+        env = self.make_env(0, add_monitor=False) #at this point no gpus avail thus cant run
         self.ob_space, self.ac_space = env.observation_space, env.action_space
         self.ob_mean, self.ob_std = random_agent_ob_mean_std(env)
         del env
+        # if args["env_kind"] == "robo_env":
+        #     #for robo env lets create 1 env first
+        #     self.envs = [functools.partial(self.make_env, i) for i in range(1)] 
+        # else:
         self.envs = [functools.partial(self.make_env, i) for i in range(self.envs_per_process)]
 
     def train(self):
@@ -159,11 +164,7 @@ def make_env_all_params(rank, add_monitor, args): #rank is 0,
             env = make_robo_pong()
         elif args["env"] == "hockey":
             env = make_robo_hockey()
-    elif args["env_kind"] == 'robo_env':
-        env = gym.make(args['env']) #TODO: Error is here!
-    else:
-        env = gym.make(args['env'])
-        
+
     if add_monitor:
         env = Monitor(env, osp.join(logger.get_dir(), '%.2i' % rank))
     return env

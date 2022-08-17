@@ -14,7 +14,7 @@ class CnnPolicy(object):
         self.ob_mean = ob_mean
         self.ob_std = ob_std
         with tf.variable_scope(scope):
-            self.ob_space = ob_space
+            self.ob_space = ob_space #TODO: problem with ob_space which is a Tensor("pol/Reshape:0", shape=(?, 324), dtype=int32)
             self.ac_space = ac_space
             self.ac_pdtype = make_pdtype(ac_space)
             self.ph_ob = tf.placeholder(dtype=tf.int32,
@@ -51,7 +51,7 @@ class CnnPolicy(object):
 
         with tf.variable_scope(self.scope + "_features", reuse=reuse):
             x = (tf.to_float(x) - self.ob_mean) / self.ob_std
-            x = small_convnet(x, nl=self.nl, feat_dim=self.feat_dim, last_nl=None, layernormalize=self.layernormalize)
+            x = small_convnet(x, nl=self.nl, feat_dim=self.feat_dim, last_nl=None, layernormalize=self.layernormalize) #TODO: problem is in this function
 
         if x_has_timesteps:
             x = unflatten_first_dim(x, sh)
